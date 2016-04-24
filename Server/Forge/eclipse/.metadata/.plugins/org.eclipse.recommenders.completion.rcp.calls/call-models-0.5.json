@@ -1,0 +1,17 @@
+{
+  "C:\\Users\\Bridgar\\Desktop\\Bukkit\\1.8_Server\\craftbukkit.jar": {
+    "location": "C:\\Users\\Bridgar\\Desktop\\Bukkit\\1.8_Server\\craftbukkit.jar",
+    "status": "UNRESOLVED",
+    "error": "No call model found for \u0027C:\\Users\\Bridgar\\Desktop\\Bukkit\\1.8_Server\\craftbukkit.jar\u0027. Neither fingerprint \u00273f912d4e58505dd6015937e66204892cf23d81ef\u0027 nor symbolic name \u0027org.xerial.sqlite-jdbc\u0027 are known."
+  },
+  "C:\\Program Files\\Java\\jre1.8.0_66\\lib\\rt.jar": {
+    "coordinate": "jre:jre:zip:call:1.0.0",
+    "location": "C:\\Program Files\\Java\\jre1.8.0_66\\lib\\rt.jar",
+    "status": "RESOLVED"
+  },
+  "C:\\Users\\Bridgar\\Desktop\\Forge\\eclipse\\Test_Plugin\\src": {
+    "location": "C:\\Users\\Bridgar\\Desktop\\Forge\\eclipse\\Test_Plugin\\src",
+    "status": "UNRESOLVED",
+    "error": "No class path info available for \u0027C:\\Users\\Bridgar\\Desktop\\Forge\\eclipse\\Test_Plugin\\src\u0027. Skipped."
+  }
+}
