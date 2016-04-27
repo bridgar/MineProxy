@@ -102,6 +102,7 @@ class Connection(object):
             return False
         else:
             packet = self._outgoing_packet_queue.popleft()
+            print("send " + str(packet))
             if self.options.compression_enabled:
                 packet.write(self.socket, self.options.compression_threshold)
             else:
@@ -181,7 +182,6 @@ class NetworkingThread(threading.Thread):
                 self.connection.file_object)
             while packet:
                 num_packets += 1
-
                 self.connection.reactor.react(packet)
                 for listener in self.connection.packet_listeners:
                     listener.call_packet(packet)
@@ -303,7 +303,7 @@ class PlayingReactor(PacketReactor):
             self.connection.options.compression_enabled = True
 
         if packet.packet_name == "keep alive":
-            keep_alive_packet = packets.KeepAlivePacket()
+            keep_alive_packet = packets.KeepAliveServerboundPacket()
             keep_alive_packet.keep_alive_id = packet.keep_alive_id
             self.connection.write_packet(keep_alive_packet)
 
@@ -316,8 +316,22 @@ class PlayingReactor(PacketReactor):
             position_response.pitch = packet.pitch
             position_response.on_ground = True
 
-            self.connection.write_packet(position_response)
+            if packet.teleport_id != 0:
+                teleport_confirm = packets.TeleportConfirmPacket()
+                teleport_confirm.teleport_id = packet.teleport_id
+                self.connection.write_packet(teleport_confirm)
+            else:
+                self.connection.write_packet(position_response)
+
             self.connection.spawned = True
+
+        if packet.packet_name == "multi block change":
+            print("gottem!!!")
+            records = packet.records
+            for x in range(1, records[0]+1):
+                print("horizontal: " + str(records[x][0]))
+                print("y: " + str(records[x][1]))
+                print("block: " + str(records[x][2] >> 4))
 
         if packet.packet_name == "disconnect":
             print(packet.json_data)  # TODO: handle propagating this back

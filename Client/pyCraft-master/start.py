@@ -5,7 +5,7 @@ from optparse import OptionParser
 from minecraft import authentication
 from minecraft.exceptions import YggdrasilError
 from minecraft.networking.connection import Connection
-from minecraft.networking.packets import ChatMessagePacket, ChatPacket
+from minecraft.networking.packets import ChatMessageClientboundPacket, ChatPacket
 from minecraft.compat import input
 
 
@@ -63,7 +63,7 @@ def main():
         print("Position: " + str(chat_packet.position))
         print("Data: " + chat_packet.json_data)
 
-    connection.register_packet_listener(print_chat, ChatMessagePacket)
+    #connection.register_packet_listener(print_chat, ChatMessagePacket)
     while True:
         try:
             text = input()

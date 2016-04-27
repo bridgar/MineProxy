@@ -3,6 +3,7 @@ Each type has a method which is used to read and write it.
 These definitions and methods are used by the packet definitions
 """
 import struct
+import nbt
 
 
 class Type(object):
@@ -16,6 +17,109 @@ class Type(object):
 
 
 # =========================================================
+
+
+class UUID(Type):
+    @staticmethod
+    def read(file_object):
+        return struct.unpack('>LL', file_object.read(8))
+
+    @staticmethod
+    def send(values, socket):
+        socket.send(struct.pack('>LL', values[0], values[1]))
+
+
+class Slot(Type):
+    @staticmethod
+    def read(file_object):
+        ret = []
+        block_id = struct.unpack('>h', file_object.read(2))[0]
+        ret.append(block_id)
+        if block_id != -1:
+            item_count = struct.unpack('>B', file_object.read(1))[0]
+            item_damage = struct.unpack('>h', file_object.read(2))[0]
+            ret.append(item_count)
+            ret.append(item_damage)
+            nbtfile = nbt.NBTFILE(fileobj=file_object)
+            ret.append(nbtfile)
+        return ret
+
+    @staticmethod
+    def send(values, socket):
+        if len(values) == 1:
+            socket.send(struct.pack('>h', values[0]))
+        elif len(values) == 4:
+            socket.send(struct.pack('>hBh', values[0], values[1], values[2]))
+            values[3].write_file(buffer=socket.makefile())  # TODO this is probably wrong
+
+
+class SlotArray(Type):
+    @staticmethod
+    def read(file_object):
+        ret = []
+        count = struct.unpack('>h', file_object.read(2))[0]
+        ret.append(count)
+        for x in range(0, count):
+            ret.append(Slot.read(file_object))
+        return ret
+
+    @staticmethod
+    def send(values, socket):
+        socket.send(struct.pack('>h', values[0]))
+        for x in range(1, values[0]+1):
+            Slot.send(values[x], socket)  # TODO this is probably wrong
+
+
+class TripleByteArray(Type):
+    @staticmethod
+    def read(file_object):
+        ret = []
+        count = Integer.read(file_object)
+        ret.append(count)
+        for x in range(0, count):
+            first = Byte.read(file_object)
+            second = Byte.read(file_object)
+            third = Byte.read(file_object)
+            ret.append([first, second, third])
+        return ret
+
+    @staticmethod
+    def send(values, socket):
+        socket.send(struct.pack('>i', values[0]))
+        for x in range(1, values[0]+1):
+            socket.send(struct.pack('>BBB', values[x][0], values[x][1], values[x][2]))  # TODO this is probably wrong
+
+
+class RecordArray(Type):
+    @staticmethod
+    def read(file_object):
+        ret = []
+        count = VarInt.read(file_object)
+        ret.append(count)
+        for x in range(0, count):
+            horizontal_position = UnsignedByte.read(file_object)
+            y_coord = UnsignedByte.read(file_object)
+            block_id = VarInt.read(file_object)
+            ret.append([horizontal_position, y_coord, block_id])
+        return ret
+
+    @staticmethod
+    def send(values, socket):
+        VarInt.send(values[0], socket)
+        for x in range(1, values[0]+1):
+            UnsignedByte.send(values[x][0], socket)
+            UnsignedByte.send(values[x][1], socket)
+            VarInt.send(values[x][2], socket)
+
+
+class NBT(Type):
+    @staticmethod
+    def read(file_object):
+        return nbt.NBTFILE(fileobj=file_object)
+
+    @staticmethod
+    def send(value, socket):
+        value.write_file(buffer=socket.makefile())
 
 
 class Boolean(Type):
