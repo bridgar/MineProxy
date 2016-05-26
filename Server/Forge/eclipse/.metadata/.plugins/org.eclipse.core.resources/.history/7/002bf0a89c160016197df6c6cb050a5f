@@ -1,0 +1,27 @@
+package me.bridgar;
+
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.Socket;
+import java.net.UnknownHostException;
+
+public class ProxyServer implements Runnable {
+	String dest, data;
+	private byte[] data;
+	Socket server;
+	
+	public ProxyServer(String dest, int port, String data) {
+		this.data = data.getBytes();
+	}
+	
+	public void run() {
+		try {
+			server = new Socket()
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+}

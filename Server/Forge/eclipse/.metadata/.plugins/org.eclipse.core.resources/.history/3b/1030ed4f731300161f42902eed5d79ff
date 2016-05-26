@@ -1,0 +1,7 @@
+name: MyPlugin
+main: me.bridgar.MyPlugin
+version: 1.0
+commands:
+  fun:
+  nofun:
+  j:

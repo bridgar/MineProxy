@@ -88,7 +88,6 @@ class Packet(object):
             # get uncompressed length
             uncompressed_length = len(packet_buffer.get_writable())
             if uncompressed_length > compression_threshold != -1:
-                print("compressed")
                 # compress the current payload
                 compressed_data = compress(packet_buffer.get_writable())
                 packet_buffer.reset()
@@ -98,15 +97,12 @@ class Packet(object):
                 packet_buffer.send(compressed_data)
             else:
                 # write out a 0 to indicate uncompressed data
-                print("uncompressed")
                 packet_data = packet_buffer.get_writable()
                 packet_buffer.reset()
                 VarInt.send(0, packet_buffer)
                 packet_buffer.send(packet_data)
 
         packet_data = packet_buffer.get_writable()
-        print("len: " + str(len(packet_data)))
-        print("payload: " + ":".join("{:02x}".format(ord(c)) for c in packet_data))
 
         VarInt.send(len(packet_data), socket)  # Packet Size
         socket.send(packet_data)  # Packet Payload
@@ -1153,6 +1149,17 @@ class PositionAndLookPacket(Packet):
         {'yaw': Float},
         {'pitch': Float},
         {'on_ground': Boolean}]
+
+
+class UseEntityPacket(Packet):
+    id = 0x0A
+    packet_name = "use entity"
+    definition = [
+        {"target": VarInt},
+        {"type": VarInt},
+        {"target_x": Float},
+
+    ]
 
 
 STATE_PLAYING_SERVERBOUND = {

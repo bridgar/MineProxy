@@ -102,7 +102,6 @@ class Connection(object):
             return False
         else:
             packet = self._outgoing_packet_queue.popleft()
-            print("send " + str(packet))
             if self.options.compression_enabled:
                 packet.write(self.socket, self.options.compression_threshold)
             else:
@@ -324,14 +323,6 @@ class PlayingReactor(PacketReactor):
                 self.connection.write_packet(position_response)
 
             self.connection.spawned = True
-
-        if packet.packet_name == "multi block change":
-            print("gottem!!!")
-            records = packet.records
-            for x in range(1, records[0]+1):
-                print("horizontal: " + str(records[x][0]))
-                print("y: " + str(records[x][1]))
-                print("block: " + str(records[x][2] >> 4))
 
         if packet.packet_name == "disconnect":
             print(packet.json_data)  # TODO: handle propagating this back

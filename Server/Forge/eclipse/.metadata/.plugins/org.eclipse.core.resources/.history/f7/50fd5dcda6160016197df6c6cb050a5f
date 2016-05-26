@@ -1,0 +1,102 @@
+package me.bridgar;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.Socket;
+import java.net.UnknownHostException;
+import java.util.HashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+
+public class ProxyServer implements Runnable {
+	ConcurrentLinkedQueue<String> in;
+	ConcurrentLinkedQueue<String> out;
+	HashMap<String, Socket> socks;
+	Socket server;
+	
+	public ProxyServer(ConcurrentLinkedQueue<String> in, ConcurrentLinkedQueue<String> out) {
+		this.in = in;
+		this.out = out;
+		socks = new HashMap<String, Socket>();
+	}
+	
+	public void run() {
+		while (true) {
+			if(in.isEmpty()) {
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+				continue;
+			}
+			
+			String data = in.poll();
+			
+			String line = data.split("\n")[0];
+			String url = line.split(" ")[1];
+			int httpPos = url.indexOf("://");
+			String temp;
+			
+			if(httpPos == -1) temp = url;
+			else temp = url.substring(httpPos+3, url.length());
+			
+			int portPos = temp.indexOf(":");
+			int destPos = temp.indexOf("/");
+			if(destPos == -1) destPos = temp.length();
+			String dest = "";
+			int port = -1;
+			if(portPos == -1 || destPos < portPos) {
+				port = 80;
+				dest = temp.substring(0, destPos);
+			} else {
+				port = Integer.parseInt(temp.substring(portPos+1, temp.length()).substring(0,  destPos-portPos-1));
+				dest = temp.substring(0, portPos);
+			}
+			
+			sendToServer(dest, port, data);
+		}
+	}
+	
+	private void sendToServer(String dest, int port, String data) {
+		String search = dest + ":" + port;
+		Socket s;
+		if(socks.containsKey(search)) {
+			s = socks.get(search);
+		} else {
+			try {
+				s = new Socket(dest, port);
+			} catch (Exception e) {
+				e.printStackTrace();
+				return;
+			}
+			socks.put(search, s);
+		}
+		
+		InputStream inFromS = null;
+		
+		try {
+			inFromS = s.getInputStream();
+			OutputStream outToS = s.getOutputStream();
+			
+			outToS.write(data.getBytes());
+			outToS.flush();
+		} catch (IOException e) {
+			socks.remove(search);
+			System.out.println("socket missing. Retrying with new socket." );
+			sendToServer(dest, port, data);
+		}
+		
+		int bytesRead;
+		byte[] reply = new byte[4096];
+		try {
+			while((bytesRead = inFromS.read(reply)) != -1) {
+				
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+}

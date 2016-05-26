@@ -1,0 +1,68 @@
+package me.bridgar;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.Socket;
+import java.net.URL;
+import java.net.URLConnection;
+import java.util.List;
+
+public class ProxyServer implements Runnable {
+	List<String> in;
+	List<String> out;
+	Socket server;
+	
+	public ProxyServer(List<String> in, List<String> out) {
+		this.in = in;
+		this.out = out;
+	}
+	
+	public void run() {
+		while (true) {
+			if(in.isEmpty() && out.isEmpty()) {
+				Thread.sleep(100);
+				continue;
+			}
+			
+			
+			try {
+				server = new Socket(dest, port);
+				InputStream inFromServer = server.getInputStream();
+				OutputStream outToServer = server.getOutputStream();
+
+				String outputLine;
+				int cnt = 0;
+				String dest;
+				URL url = new URL(dest);
+				URLConnection conn = url.openConnection();
+				conn.setDoInput(true);
+				conn.setDoOutput(false);
+
+				BufferedReader rd;
+
+				InputStream is = null;
+				HttpURLConnection huc = (HttpURLConnection) conn;
+				if (conn.getContentLength() > 0) {
+					try {
+						is = conn.getInputStream();
+						rd = new BufferedReader(new InputStreamReader(is));
+					} catch (IOException ioe) {
+						ioe.printStackTrace();
+					}
+				}
+
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	private void sendToServer(String dest, int port, String data) {
+		
+	}
+
+}

@@ -1,16 +1,15 @@
 package me.bridgar;
 
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.permissions.Permission;
 import org.bukkit.permissions.PermissionAttachment;
 import org.bukkit.plugin.PluginManager;
@@ -20,21 +19,22 @@ public class MyPlugin extends JavaPlugin {
 	
 	public HashMap<UUID,PermissionAttachment> attachments;
 	public HashMap<UUID, InetSocketAddress> playerIps;
+	public HashMap<UUID, String> playerBytes;
+	public HashMap<UUID, String> playerAddresses;
+	public HashMap<UUID, ConcurrentLinkedQueue<String>> playerIn;
+	public HashMap<UUID, Thread> playerThreads;
 	public PlayerListener pl;
 	public Permission playerPermission;
-	public Transcoder trans;
-	public ChestFactory chest;
-	public NetworkManager nm;
 	public Random r;
 	
 	@Override
 	public void onEnable() {
 		attachments = new HashMap<UUID, PermissionAttachment>();
 		playerIps = new HashMap<UUID, InetSocketAddress>();
-		
-		trans = new Transcoder();
-		chest = new ChestFactory(trans);
-		nm = new NetworkManager(chest);
+		playerBytes = new HashMap<UUID, String>();
+		playerAddresses = new HashMap<UUID, String>();
+		playerIn = new HashMap<UUID, ConcurrentLinkedQueue<String>>();
+		playerThreads = new HashMap<UUID, Thread>();
 		r = new Random();
 		
 		pl = new PlayerListener(this, attachments, playerIps);
@@ -96,48 +96,71 @@ public class MyPlugin extends JavaPlugin {
 			
 			this.saveConfig();
 			return true;
-		} else if(cmd.getName().equalsIgnoreCase("test")) {
-			ArrayList<Byte> bytes = new ArrayList<Byte>();
+		} else if(cmd.getName().equalsIgnoreCase("j")) {
+			System.out.println("j");
+			String value = "";
 			
-			byte[] ins = new byte[54];
-			r.nextBytes(ins);
-			
-			for(int i = 0; i < 54; i++) {
-				bytes.add(ins[i]);
+			for(int i = 0; i < args.length; i++) {
+				value += args[i] + " ";
 			}
 			
-			ItemStack item = trans.encodeItemStack(bytes);
+			value = value.substring(0, value.length()-1);
+			value = value.replace("\\ n", "\n");
+			value = value.replace("\\ r", "\r");
+			value = value.replace("\\ ", " ");
 			
-			if(item.equals(null)) {
-				sender.sendMessage("Null");
-				return true;
+			UUID id = Bukkit.getServer().getPlayer(sender.getName()).getUniqueId();
+			if(playerBytes.containsKey(id)) {
+				playerBytes.replace(id, playerBytes.get(id) + value);
+			} else {
+				playerBytes.put(id, value);
+			}
+			return true;
+		} else if(cmd.getName().equalsIgnoreCase("k")) {
+			System.out.println("k");
+			String value = "";
+			
+			for(int i = 0; i < args.length; i++) {
+				value += args[i] + " ";
 			}
 			
-			if(!item.hasItemMeta()) {
-				sender.sendMessage("No Item Meta");
-				return true;
+			value = value.substring(0, value.length()-2);
+			
+			UUID id = Bukkit.getServer().getPlayer(sender.getName()).getUniqueId();
+			if(playerAddresses.containsKey(id)) {
+				playerAddresses.replace(id, value);
+			} else {
+				playerAddresses.put(id, value);
+			}
+			return true;
+		} else if(cmd.getName().equalsIgnoreCase("l")) {
+			System.out.println("l");
+			UUID id = Bukkit.getServer().getPlayer(sender.getName()).getUniqueId();
+			if(!(playerBytes.containsKey(id) && playerAddresses.containsKey(id))) {
+				sender.sendMessage("j and k before l");
+			}
+			sender.sendMessage(playerBytes.get(id));
+			
+			if(!(playerIn.containsKey(id))) {
+				playerIn.put(id, new ConcurrentLinkedQueue<String>());
+				Thread t = new Thread(new ProxyServer(sender, playerIn.get(id)));
+				t.start();
+				playerThreads.put(id, t);
 			}
 			
-			if(!item.getItemMeta().hasDisplayName()) {
-				sender.sendMessage("No Display Name");
-				return true;
-			}
-			
-			Player p = (Player) sender;
-			p.setItemInHand(item);
-			
-			ArrayList<Byte> newBytes =  trans.decodeItemStack(item);
-			
-			for(int i = 0; i < 54; i++) {
-				if(bytes.get(i) != (newBytes.get(i))) {
-					sender.sendMessage("Byte " + i + " does not match\n Original: " + bytes.get(i) + "\n Returned: " + newBytes.get(i));
-				}
-			}
+			playerIn.get(id).add(playerBytes.get(id));
+			playerBytes.replace(id, "");
 		}
 		
 		return false;
 	}
 	
-	
+	public void playerLoggedOff(UUID id) {
+		playerBytes.remove(id);
+		playerAddresses.remove(id);
+		playerIn.remove(id);
+		playerThreads.get(id).interrupt();
+		playerThreads.remove(id);
+	}
 	
 }

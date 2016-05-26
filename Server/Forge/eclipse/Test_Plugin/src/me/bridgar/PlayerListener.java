@@ -139,6 +139,7 @@ public class PlayerListener implements Listener {
 		UUID id = player.getUniqueId();
 		
 		playerIps.remove(id);
+		plugin.playerLoggedOff(id);
 	}
 	
 	//If a player has permissions, spit out their pitch

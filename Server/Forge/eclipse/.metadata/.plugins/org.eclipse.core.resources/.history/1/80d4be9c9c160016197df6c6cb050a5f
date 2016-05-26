@@ -1,0 +1,10 @@
+package me.bridgar;
+
+public class ProxyServer implements Runnable {
+
+	public void run() {
+		// TODO Auto-generated method stub
+
+	}
+
+}

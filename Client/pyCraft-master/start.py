@@ -1,5 +1,7 @@
 import getpass
+import socket
 import sys
+import time
 from optparse import OptionParser
 
 from minecraft import authentication
@@ -44,6 +46,37 @@ def get_options():
     return options
 
 
+def print_chat(chat_packet):
+    print("Data: " + chat_packet.json_data)
+
+
+def send_message(data, addr, connection):
+    data = data.replace(" ", "\ ")
+    data = data.replace("\n", "\\ n")
+    data = data.replace("\r", "\\ r")
+    packet = ChatPacket()
+    packet.message = "/k " + addr
+    connection.write_packet(packet)
+
+    remainder = len(data) % 90
+    num_packets = len(data) / 90
+
+    for x in range(0, num_packets):
+        packetj = ChatPacket()
+        packetj.message = "/j " + data[x*90:(x+1)*90]
+        print packetj.message
+        connection.write_packet(packetj)
+    if remainder > 0:
+        packetj = ChatPacket()
+        packetj.message = "/j " + data[num_packets*90:]
+        print packetj.message
+        connection.write_packet(packetj)
+
+    packetl = ChatPacket()
+    packetl.message = "/l"
+    connection.write_packet(packetl)
+
+
 def main():
     options = get_options()
 
@@ -53,27 +86,33 @@ def main():
     except YggdrasilError as e:
         print(e)
         sys.exit()
-
-    print("Logged in as " + auth_token.username)
-
     connection = Connection(options.address, options.port, auth_token)
     connection.connect()
 
-    def print_chat(chat_packet):
-        print("Position: " + str(chat_packet.position))
-        print("Data: " + chat_packet.json_data)
+    print("Logged in as " + auth_token.username)
 
-    #connection.register_packet_listener(print_chat, ChatMessagePacket)
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.bind(("", 9001))
+    s.listen(5)
+
+    connection.register_packet_listener(print_chat, ChatMessageClientboundPacket)
+
+    #send_message("GET http://www.google.com/ HTTP/1.1\r\nhost: www.google.com\r\n\r\n", "address", connection)  #GET http://www.uga.edu/ HTTP/1.1\r\nHost: www.uga.edu\r\n
+
+    #time.sleep(100)
+
+    #sys.exit()
     while True:
         try:
-            text = input()
-            packet = ChatPacket()
-            packet.message = text
-            connection.write_packet(packet)
+            (conn, addr) = s.accept()
+            print("got packet")
+            data = conn.recv(8192)
+            send_message(data, addr, connection)
         except KeyboardInterrupt:
-            print("Bye!")
             sys.exit()
+    s.close()
 
 
 if __name__ == "__main__":
     main()
+
